@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:key="english_ime_settings"
+    android:title="@string/ime_settings">
+
+    <PreferenceCategory android:title="Wifi">
+
+        <Preference
+            android:key="ip_address"
+            android:summary=" "
+            android:title="IP Address" />
+    </PreferenceCategory>
+
+</PreferenceScreen>
+
+

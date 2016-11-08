@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title></title>
+    <script src="js/py2.js"></script>
+    <script src="js/angular.js"></script>
+    <script src="js/angular-touch.js"></script>
+    <!--
+    <link href="css/bootstrap.min.css" rel="stylesheet"></link>
+    <link href="css/bootstrap-theme.min.css" rel="stylesheet"></link>
+    -->
+    <style>
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body{
+    margin: 0px;
+    height: 300px;
+    background-color: #D4D8DB;
+}
+#keyboard {
+  //background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, color-stop(0%, #9199A4), color-stop(50%, #7D8591), color-stop(100%, #535C69));
+  //border-radius: 10px;
+  background-color: #D4D8DB;
+  position: absolute;
+  bottom: 0px;
+  width: 100%;
+}
+ 
+.row {
+  margin: 15px 2px;
+  text-align: center;
+}
+ 
+.key {
+  //background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, color-stop(0%, #F9F9FA), color-stop(50%, #ECEDEE), color-stop(100%, #DDDFE1));
+  background-color: #FFFFFF;
+  -webkit-box-shadow: #333 1px 1px 2px 0px;
+  height: 2em;
+  line-height: 2em;
+  font-size: 1.15em;
+  border-radius: 5px;
+  width: 1.4em;
+  text-align: center;
+  display: inline-block;
+  margin: 0 5px;
+  font-family: Helvetica;
+  font-weight: 800;  
+}
+ 
+.system_key {
+  //background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, color-stop(0%, #808893), color-stop(50%, #68717D), color-stop(100%, #515A67));
+  background-color: #A8B0BD;
+  color: #FFF;
+  //border: 1px solid #515A67;
+  font-weight: 600;
+}
+
+.choice{
+   background-color: #FFFFFF;
+  -webkit-box-shadow: #333 1px 1px 2px 0px;
+  height: 2em;
+  line-height: 2em;
+  font-size: 1em;
+  border-radius: 5px;
+  text-align: center;
+  display: inline-block;
+  margin: 3px 5px;
+  padding: 2px 5px;
+  font-family: Helvetica;
+  font-weight: 800; 
+}
+
+    .key:hover{
+    	border-radius:10px;
+    }
+    </style>
+  </head>
+  <body>
+    <div ng-app="app" >
+        <div ng-controller="app-controller" >
+
+            <div id="keyboard">
+                <div class="row" style="text-align: left;" ng-show='input'>
+                    <div>${{input}}</div>
+                </div>
+                <div ng-show='input'>
+                    <div style="width:90%;height:2.5em;overflow:hidden;display:inline-block;" >
+                      <div class="choice">~</div>
+                        <div class="choice" ng-repeat='choice in choices.slice(0,10) track by $index' ng-click="send(choice)">
+                                {{choice}}
+                        </div>
+                    </div>
+                    <div style="height:2.5em;display:inline-block;overflow:hidden;">
+                        <div class="key" style="margin-right:0px;" ng-init="more=false;" ng-click="more=!more">^</div>
+                    </div>
+                </div>
+             <div class="row" ng-show="en">
+                <div class="key" ng-repeat='key in keys0' ng-click="on(key)">{{key}}</div>
+              </div>
+              <div class="row">
+                <div class="key" ng-repeat='key in keys1' ng-click="on(key)">{{key}}</div>
+              </div>
+              <div class="row">
+                <div class="key" ng-repeat='key in keys2' ng-click="on(key)">{{key}}</div>
+              </div>
+              <div class="row">
+                <div class="key system_key" style="width: 2em" ng-click="reload()">↑</div>
+                <div class="key" ng-repeat='key in keys3' ng-click="on(key)">{{key}}</div>
+                <div class="key system_key" style="width: 2em" ng-click="backspace()">←</div>
+              </div>
+              <div class="row">
+                <div class="key system_key" style="width: 2.25em" ng-click="en=!en;" ng-style="{'color':colors[en]}">123</div>
+                <div class="key system_key" style="width: 2.25em">☺</div>
+                <div class="key" style="width: 6.5em; color: #71717D; font-weight: 600;" ng-click="on(' ')">space</div>
+                <div class="key system_key" style="width: 4em" ng-click="on_return()">return</div>
+              </div>
+            </div>
+            <!-- choices box -->
+              <div style="position:fixed;z-index:100;bottom:0px;background-color:#D4D8DB;padding:3px;" ng-show="more" >
+                <div style="width:90%;height:300px;float:left;overflow-y:scroll;">
+                    <div class="choice" ng-repeat='choice in choices.slice(0,100) track by $index' ng-click="send(choice)">
+                            {{choice}}
+                    </div>
+                </div>
+                <div style="float:right;height:300px;">
+                        <div class="key" style="margin:2px;display:block;" ng-click="more=!more">^</div>
+                </div>
+              </div>
+        </div>
+    </div>
+
+<script>
+var android=android;
+console.log(document.body.clientWidth);
+var app = angular.module('app', [
+  'Controllers','ngTouch'
+]);
+
+function pinyin_full(test){
+  var shengmu='bpmfdtlkjqxrzcsyw'; //not include g n h
+  var pre=0;
+  var result='';
+  for(var i=1;i<test.length;i++){
+    if(test[i]=="'"){
+      var token=test.slice(pre,i);
+      //result.push(token);
+      result+=token[0];
+      pre=i+1;
+    }
+    if(test[i]=='h'&&i>0&&'zcs'.indexOf(test[i-1])<0){
+      var token=test.slice(pre,i);
+      //result.push(token);
+      result+=token[0];
+      pre=i;
+    }
+    if(shengmu.indexOf(test[i])>=0){
+      //console.log(test.slice(pre,i));
+      var token=test.slice(pre,i);
+      //result.push(token);
+      result+=token[0];
+      pre=i;
+    }
+  }
+  if(pre<test.length){
+    var token=test.slice(pre,i);
+    result+=token[0];
+    //result.push(token);
+  }
+  return result;
+}
+
+function sort_by(a,b){
+  return weights[b]-weights[a];
+}
+
+var Controllers = angular.module('Controllers', []);
+Controllers.controller('app-controller',['$scope','$http',function($scope,$http){
+	$scope.keys0='1234567890';
+	$scope.keys1='QWERTYUIOP';
+	$scope.keys2='ASDFGHJKL';
+	$scope.keys3='ZXCVBNM';
+	$scope.input='';
+    $scope.choices=[];
+    $scope.page=0;
+    $scope.en=false;
+    $scope.colors={true:'red',false:'black'};
+    $scope.query_choices=function(){
+      word=$scope.input;
+      var indexs1,indexs2;
+      indexs1=first_index[word];
+      full=pinyin_full(word);
+      if(full.length>1)
+        indexs2=full_index[full];
+      re=[];
+      if(indexs1!=null){
+        re=re.concat(indexs1);
+      }
+      if(indexs2!=null){
+        re=re.concat(indexs2);
+      }
+      $scope.re=re.sort(sort_by);
+    }
+    $scope.show_choices=function(){
+        $scope.choices=[];
+        page=$scope.page;
+        choices=$scope.re;//slice(page*10,page*10+10);
+        console.log(choices);
+        for( var i=0;i<choices.length;i++){
+            $scope.choices.push(words[choices[i]]);
+        }
+    }
+    $scope.on=function(letter){
+        if($scope.en){
+            if(android){
+                android.input(letter.toLowerCase());
+            }
+        }else{
+            $scope.input+=letter.toLowerCase();
+            $scope.query_choices();
+            $scope.show_choices();
+        }
+
+
+    }
+    $scope.on_return=function(){
+            if(android){
+                android.input($scope.input);
+                $scope.input='';
+            }
+    }
+    $scope.prev=function(){
+        $scope.page-=1;
+        $scope.show_choices();
+    }
+    $scope.next=function(){
+        $scope.page+=1;
+        $scope.show_choices();
+    }
+    $scope.send=function(word){
+        $scope.input='';
+        $scope.choices=[];
+        if($scope.more){
+            $scope.more=false;
+        }
+        if(android){
+            android.input(word);
+        }
+    }
+    $scope.reload=function(){
+      console.log('reload');
+      window.location.reload();
+    }
+    $scope.backspace=function(){
+        if($scope.input.length==0){
+            if(android){
+                android.backspace();
+            }
+        }else{
+            $scope.input=$scope.input.slice(0,-1);
+            $scope.query_choices();
+            $scope.show_choices();
+        }
+        
+    }
+}]);
+
+</script>
+  </body>
+</html>
